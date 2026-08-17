@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -179,10 +180,22 @@ async def upload_document(
         raise HTTPException(413, "File exceeds the 80 MB limit.")
 
     dest = STORAGE_DIR / f"{uuid.uuid4().hex}.pdf"
-    dest.write_bytes(payload)
 
-    doc = process_upload(db, filename=file.filename, stored_path=dest,
-                         use_llm=use_llm and LLM_ENABLED, actor=actor)
+    # This handler is `async def` because it has to `await file.read()`, which
+    # means its body runs *on the event loop* - unlike every other route here,
+    # which is a plain `def` and so gets a threadpool from Starlette for free.
+    # process_upload() is synchronous and CPU-bound (tesseract OCR over every
+    # scanned page), so calling it directly would freeze the loop for the whole
+    # duration: no other request gets served, /health included. A platform that
+    # health-checks the container then concludes the process is dead and kills
+    # it mid-upload, which surfaces to the browser as a 502 and, while the
+    # instance restarts, a 404. Hand the blocking work to a thread instead.
+    def _store_and_process():
+        dest.write_bytes(payload)
+        return process_upload(db, filename=file.filename, stored_path=dest,
+                              use_llm=use_llm and LLM_ENABLED, actor=actor)
+
+    doc = await run_in_threadpool(_store_and_process)
     if doc.status == "error":
         raise HTTPException(422, f"Could not read the PDF: {doc.error}")
     db.refresh(doc)
