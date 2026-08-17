@@ -190,15 +190,32 @@ async def upload_document(
     # health-checks the container then concludes the process is dead and kills
     # it mid-upload, which surfaces to the browser as a 502 and, while the
     # instance restarts, a 404. Hand the blocking work to a thread instead.
-    def _store_and_process():
+    # The worker owns its own Session rather than borrowing the request-scoped
+    # one. A Session is not thread-safe, and ingest_document() flushes - opening
+    # a write transaction - *before* the long extract_pdf() call, so that
+    # transaction stays open for the whole OCR run. Handing it to a thread while
+    # the request context may close it elsewhere can leave the connection stuck
+    # mid-transaction in the pool, and on SQLite one stuck writer locks the
+    # database for every later upload, permanently. Commit or roll back and
+    # close here, in the thread that opened it, then re-read on the way out.
+    def _store_and_process() -> str:
         dest.write_bytes(payload)
-        return process_upload(db, filename=file.filename, stored_path=dest,
-                              use_llm=use_llm and LLM_ENABLED, actor=actor)
+        worker = SessionLocal()
+        try:
+            d = process_upload(worker, filename=file.filename, stored_path=dest,
+                               use_llm=use_llm and LLM_ENABLED, actor=actor)
+            worker.commit()
+            return d.id
+        except Exception:
+            worker.rollback()
+            raise
+        finally:
+            worker.close()
 
-    doc = await run_in_threadpool(_store_and_process)
+    doc_id = await run_in_threadpool(_store_and_process)
+    doc = db.get(Document, doc_id)
     if doc.status == "error":
         raise HTTPException(422, f"Could not read the PDF: {doc.error}")
-    db.refresh(doc)
     enc = doc.encounters[0]
     return encounter_json(enc, doc, full=True)
 
