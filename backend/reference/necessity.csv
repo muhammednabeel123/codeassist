@@ -1,0 +1,22 @@
+code,allowed_icd10_prefixes,policy
+83036,E08|E09|E10|E11|E13|O24|R73|Z79.4|Z79.84,Diabetes management - A1c requires a diabetes or dysglycemia diagnosis
+80061,E78|I10|I11|I25|I48|E11|Z13.220|Z00.0,Lipid panel requires a lipid/cardiovascular risk indication
+84443,E03|E05|E89.0|R53|E02,TSH requires a thyroid indication
+87880,J02|J03|J31|R07.0|Z20.09,Rapid strep requires pharyngitis or exposure
+81002,N39|N30|R31|R35|N10|N12|O23,Urinalysis requires a urinary indication
+81003,N39|N30|R31|R35|N10|N12|O23,Urinalysis requires a urinary indication
+71045,J|R05|R06|R07|A41|R50|I50,Chest radiograph requires a respiratory or cardiac indication
+71046,J|R05|R06|R07|A41|R50|I50,Chest radiograph requires a respiratory or cardiac indication
+93000,R07|R00|R42|R55|I48|I50|I25|R06,ECG requires a cardiac or syncope indication
+93010,R07|R00|R42|R55|I48|I50|I25|R06,ECG requires a cardiac or syncope indication
+20610,M17|M25|M06|M05|M00|M1A|M10,Major joint injection requires a joint pathology diagnosis
+20611,M17|M25|M06|M05|M00|M1A|M10,Major joint injection requires a joint pathology diagnosis
+94640,J44|J45|J18|J20|J21|R06,Nebulizer treatment requires an obstructive or acute respiratory indication
+94010,J44|J45|R06|J43|J47,Spirometry requires a pulmonary indication
+94060,J44|J45|R06|J43|J47,Spirometry requires a pulmonary indication
+69210,H61.2,Cerumen removal requires impacted cerumen - not routine wax
+96127,F32|F33|F41|F43|F90|F84|R45,Brief emotional assessment requires a behavioral health indication
+99406,F17|Z87.891|Z71.6,Smoking cessation counseling requires a tobacco use diagnosis
+G0121,Z12.11|Z80.0,Screening colonoscopy requires a screening diagnosis as primary
+45380,K63|D12|K51|K50|R19.5|K62|Z12.11|R93.3,Colonoscopy with biopsy requires a GI indication or finding
+17000,L57.0|D04|D48.5,Destruction of premalignant lesion requires actinic keratosis or carcinoma in situ

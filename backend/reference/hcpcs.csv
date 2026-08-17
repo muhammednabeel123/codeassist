@@ -1,0 +1,8 @@
+code,description,keywords,global_days,mue,sex,age_min,age_max,category,bilateral_eligible,professional_component,em_level,em_type
+G0438,Annual wellness visit initial,initial annual wellness visit|awv initial,0,1,,18,120,preventive,0,0,,
+G0439,Annual wellness visit subsequent,subsequent annual wellness visit|awv subsequent,0,1,,18,120,preventive,0,0,,
+G0121,Colorectal cancer screening colonoscopy not meeting high risk criteria,screening colonoscopy average risk,0,1,,45,120,endoscopy,0,0,,
+J1030,Injection methylprednisolone acetate 40 mg,depo-medrol 40 mg|methylprednisolone acetate 40,0,4,,0,120,drug,0,0,,
+J3301,Injection triamcinolone acetonide 10 mg,kenalog 10 mg|triamcinolone acetonide injection,0,8,,0,120,drug,0,0,,
+J1885,Injection ketorolac tromethamine 15 mg,toradol injection|ketorolac 15 mg,0,4,,0,120,drug,0,0,,
+J7050,Infusion normal saline solution 250 cc,normal saline 250 cc infusion,0,4,,0,120,drug,0,0,,

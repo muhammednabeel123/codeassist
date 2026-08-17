@@ -1,0 +1,19 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+sqlalchemy>=2.0
+pyyaml>=6.0
+
+# PDF text layer + OCR fallback
+pdfplumber>=0.11
+pdf2image>=1.17
+pytesseract>=0.3.10
+pillow>=10.0
+
+# sample generation + tests
+reportlab>=4.0
+pytest>=8.0
+httpx>=0.27
+
+# optional LLM extractor (only needed when CA_LLM_ENABLED=1)
+# anthropic>=0.40

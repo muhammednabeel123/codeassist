@@ -1,0 +1,15 @@
+column1,column2,modifier_allowed,rationale
+20611,76942,0,Ultrasound guidance is included in the arthrocentesis-with-guidance code
+29881,29870,0,Diagnostic arthroscopy is included in the surgical arthroscopy of the same joint
+29881,29874,1,"Separate compartment required; append 59/XS if truly distinct"
+45380,45378,0,Diagnostic colonoscopy is included in colonoscopy with biopsy
+45385,45378,0,Diagnostic colonoscopy is included in colonoscopy with polypectomy
+45385,45380,1,Different lesions required to report both
+93000,93005,0,Tracing is a component of the global ECG code
+93000,93010,0,Interpretation is a component of the global ECG code
+80053,80048,0,Basic metabolic panel is a subset of the comprehensive metabolic panel
+81003,81002,0,Only one urinalysis method is reportable per specimen
+94060,94010,0,Baseline spirometry is included in bronchodilator responsiveness testing
+10061,10060,0,Report only the highest level of I&D per abscess
+71046,71045,0,Single-view chest radiograph is included in the two-view study
+90471,96372,1,Immunization administration and therapeutic injection require distinct substances

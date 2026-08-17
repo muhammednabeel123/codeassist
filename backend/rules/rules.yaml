@@ -1,0 +1,251 @@
+# Audit rule configuration.
+#
+# Each entry configures a rule implemented in app/audit/rules.py. Compliance
+# staff can retune severity, disable a rule, or adjust a threshold without a
+# code change or redeploy - which is what actually happens in practice when a
+# payer changes policy mid-quarter.
+#
+# severity: blocker | high | medium | low | info
+#   blocker  - do not submit; near-certain denial or compliance exposure
+#   high     - review required; material revenue or audit risk
+#   medium   - should be corrected
+#   low      - quality/consistency
+#   info     - opportunity, not a defect
+#
+# Scope note: this deployment codes ICD-10-CM diagnoses only (see
+# SUPPORTED_CODE_SYSTEMS in app/config.py). The procedure-side rules below
+# - NCCI PTP, MUE, modifier 25/50, medical necessity, diagnosis pointers, E/M
+# level - stay enabled on purpose. Nothing in the pipeline creates a CPT line,
+# so they are normally silent, but a legacy or imported procedure line must
+# still be checked rather than waved through.
+
+rules:
+  unsupported_code:
+    enabled: true
+    severity: blocker
+    category: documentation
+    citation: "45 CFR 162; payer documentation requirements"
+    title: "Code {code} has no supporting documentation"
+
+  negated_or_uncertain_evidence:
+    enabled: true
+    severity: blocker
+    category: documentation
+    citation: "ICD-10-CM Official Guidelines I.A.9, IV.H"
+    title: "Code {code} is supported only by {assertion} language"
+
+  unspecified_code_used:
+    enabled: true
+    severity: medium
+    category: specificity
+    citation: "ICD-10-CM Official Guidelines I.B.18"
+    title: "Unspecified code {code} may be avoidable"
+    # Only fire when the chart has enough text that specificity was plausible.
+    min_document_chars: 400
+
+  specificity_upgrade_available:
+    enabled: true
+    severity: high
+    category: specificity
+    citation: "ICD-10-CM Official Guidelines I.B.18"
+    title: "More specific code available: {from_code} -> {to_code}"
+
+  ncci_bundling_conflict:
+    enabled: true
+    severity: blocker
+    category: bundling
+    citation: "NCCI Policy Manual, Procedure-to-Procedure edits"
+    title: "{column2} is bundled into {column1}"
+
+  ncci_modifier_required:
+    enabled: true
+    severity: high
+    category: modifier
+    citation: "NCCI Policy Manual; modifiers 59, XE, XS, XP, XU"
+    title: "{column2} with {column1} requires a distinct-service modifier"
+    accepted_modifiers: ["59", "XE", "XS", "XP", "XU"]
+
+  mue_exceeded:
+    enabled: true
+    severity: high
+    category: units
+    citation: "CMS Medically Unlikely Edits"
+    title: "{code}: {units} units exceeds the MUE of {mue}"
+
+  em_with_minor_procedure_needs_25:
+    enabled: true
+    severity: high
+    category: modifier
+    citation: "CPT Appendix A, modifier 25"
+    title: "E/M {em_code} reported with same-day procedure {proc_code} needs modifier 25"
+
+  bilateral_not_reported:
+    enabled: true
+    severity: medium
+    category: modifier
+    citation: "CPT Appendix A, modifier 50"
+    title: "{code}: bilateral service documented but not reported as bilateral"
+    triggers: ["bilateral", "both knees", "both ears", "both eyes", "right and left"]
+
+  laterality_documented_code_unspecified:
+    enabled: true
+    severity: high
+    category: specificity
+    citation: "ICD-10-CM Official Guidelines I.B.13"
+    title: "{code}: laterality is documented but the code does not specify it"
+
+  sex_conflict:
+    enabled: true
+    severity: blocker
+    category: demographic
+    citation: "CMS NCD/edit: sex-specific code"
+    title: "{code} conflicts with the documented patient sex ({patient_sex})"
+
+  age_conflict:
+    enabled: true
+    severity: high
+    category: demographic
+    citation: "CMS edit: age-specific code"
+    title: "{code} is outside the expected age range for a {patient_age}-year-old"
+
+  medical_necessity_unsupported:
+    enabled: true
+    severity: blocker
+    category: necessity
+    citation: "SSA 1862(a)(1)(A); payer LCD/NCD"
+    title: "{code} has no diagnosis on the claim that supports medical necessity"
+
+  procedure_not_linked_to_dx:
+    enabled: true
+    severity: medium
+    category: necessity
+    citation: "Claim form item 24E - diagnosis pointer"
+    title: "{code} is not linked to any diagnosis line"
+
+  em_level_above_documentation:
+    enabled: true
+    severity: high
+    category: em
+    citation: "AMA 2021+ E/M guidelines; CMS 1995/1997 as applicable"
+    title: "E/M {code} appears higher than the documentation supports"
+
+  em_level_below_documentation:
+    enabled: true
+    severity: info
+    category: em
+    citation: "AMA 2021+ E/M guidelines"
+    title: "E/M {code} may be under-coded for the documented work"
+
+  time_based_code_without_time:
+    enabled: true
+    severity: high
+    category: documentation
+    citation: "CPT time-based reporting requirements"
+    title: "{code} is time-based but no time is documented"
+    time_based_codes: ["99406", "99497", "96372"]
+
+  duplicate_code_line:
+    enabled: true
+    severity: medium
+    category: units
+    citation: "Duplicate claim line edit"
+    title: "{code} appears on more than one line without a distinguishing modifier"
+
+  missing_primary_diagnosis:
+    enabled: true
+    severity: blocker
+    category: documentation
+    citation: "ICD-10-CM Official Guidelines IV.A - first-listed diagnosis"
+    title: "No primary diagnosis is established"
+
+  screening_z_code_not_primary:
+    enabled: true
+    severity: high
+    category: sequencing
+    citation: "ICD-10-CM Official Guidelines I.C.21.c.5"
+    title: "Screening encounter: {code} should be the first-listed diagnosis"
+    screening_procedures: ["G0121", "45378", "Z12.11"]
+
+  bmi_code_missing:
+    enabled: true
+    severity: info
+    category: completeness
+    citation: "ICD-10-CM Official Guidelines I.B.14 (BMI requires a provider-documented diagnosis)"
+    title: "Morbid obesity coded without a BMI (Z68.-) code"
+
+  long_term_drug_use_missing:
+    enabled: true
+    severity: info
+    category: completeness
+    citation: "ICD-10-CM Official Guidelines I.C.4.a.3 / Z79.-"
+    title: "Long-term medication use documented but no Z79.- code reported"
+
+  billable_service_not_captured:
+    # Off: this deployment codes ICD-10-CM diagnoses only, so a rule whose whole
+    # output is "add this CPT/HCPCS line" has nowhere to send the coder. The
+    # watch list is kept so re-enabling is a one-line change if procedure coding
+    # is ever brought back in scope.
+    enabled: false
+    severity: info
+    category: revenue
+    citation: "Revenue integrity"
+    title: "Documented service {code} is not on the claim"
+    watch:
+      F17.210: "99406"     # tobacco dependence documented -> cessation counseling
+      Z12.11: "G0121"      # screening intent -> screening colonoscopy code
+
+  ocr_quality_warning:
+    enabled: true
+    severity: high
+    category: data_quality
+    citation: "Internal QA"
+    title: "Page {page} was read by OCR with low confidence ({confidence}%)"
+    min_confidence: 78
+
+  missing_provider_attestation:
+    enabled: true
+    severity: high
+    category: documentation
+    citation: "CMS signature requirements (Medicare Program Integrity Manual Ch.3)"
+    title: "No provider signature or attestation found"
+    signature_markers:
+      - "electronically signed"
+      - "signed by"
+      - "attestation"
+      - "/s/"
+      - "e-signed"
+      - "md, "
+      - "authenticated by"
+
+  documentation_gap_query:
+    enabled: true
+    severity: medium
+    category: cdi
+    citation: "AHIMA/ACDIS query practice brief"
+    title: "Documentation too vague to support a specific code: {topic}"
+    # concept -> what the physician must clarify for a specific code
+    gaps:
+      heart failure:
+        needs: "acuity (acute/chronic) and type (systolic/diastolic/combined)"
+        codes: ["I50.9"]
+      copd:
+        needs: "whether an acute exacerbation is present"
+        codes: ["J44.9"]
+      anemia:
+        needs: "the type of anemia and its cause"
+        codes: ["D64.9"]
+      chronic kidney disease:
+        needs: "the CKD stage"
+        codes: ["N18.30"]
+      sepsis:
+        needs: "the causal organism and whether organ dysfunction is present"
+        codes: ["A41.9"]
+      pneumonia:
+        needs: "the causal organism, if identified"
+        codes: ["J18.9"]
+      malnutrition:
+        needs: "severity (mild/moderate/severe) and clinical criteria met"
+        codes: []
+      obesity:
+        needs: "a provider-documented obesity class or diagnosis, plus BMI"
+        codes: ["E66.9"]

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: codeassist
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: CA_STORAGE_DIR
+        value: /data/storage
+      - key: CA_DATABASE_URL
+        value: sqlite:////data/codeassist.db
+      - key: CA_LLM_ENABLED
+        value: "0"
+    # Render's free plan has no persistent disk, so /data resets on every
+    # redeploy (not on sleep/wake). Fine for a demo; add a paid disk for
+    # data that must survive redeploys.

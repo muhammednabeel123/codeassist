@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeAssist — coding workspace</title>
+<!-- pdf.js renders the *original* page image. It is loaded from a local vendor
+     copy when present (run `make vendor`) and only falls back to the CDN in
+     development. A page displaying PHI should not be reaching a third-party
+     CDN in production - vendor it. -->
+<script>window.PDFJS_LOCAL = "/static/vendor/pdf.min.js";</script>
+<script src="/static/vendor/pdf.min.js"
+        onerror="window.__pdfjsLocalMissing=true"></script>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161b24; --panel-2:#1c2230; --line:#28303d;
+    --ink:#e6eaf2; --ink-2:#9aa6b8; --ink-3:#67738a;
+    --accent:#5b9dff; --accent-dim:#2a4a7f;
+    --blocker:#ff6b6b; --high:#ffa94d; --medium:#ffd43b; --low:#74c0fc; --info:#63d2a4;
+    --ok:#51cf66;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:var(--accent)}
+
+  /* ---------- shell ---------- */
+  .app{display:flex;flex-direction:column;height:100vh}
+  header{
+    display:flex;align-items:center;gap:16px;padding:10px 18px;
+    background:var(--panel);border-bottom:1px solid var(--line);flex:none;
+  }
+  .brand{font-weight:650;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 3px rgba(91,157,255,.18)}
+  .brand small{color:var(--ink-3);font-weight:400;margin-left:2px}
+  .spacer{flex:1}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+    padding:6px 12px;color:var(--ink);transition:.12s;
+  }
+  .btn:hover{border-color:var(--accent-dim);background:#222a39}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#08101f;font-weight:600}
+  .btn.primary:hover{background:#7cb0ff}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{padding:3px 9px;font-size:12.5px;border-radius:6px}
+
+  /* ---------- worklist ---------- */
+  .view{flex:1;min-height:0;overflow:auto}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px}
+  .drop{
+    border:1.5px dashed var(--line);border-radius:12px;padding:34px;text-align:center;
+    background:linear-gradient(180deg,#151a23,#12161e);transition:.15s;
+  }
+  .drop.hot{border-color:var(--accent);background:#16203180}
+  .drop h2{margin:0 0 6px;font-size:17px}
+  .drop p{margin:0 0 16px;color:var(--ink-2);font-size:13px}
+  .kpis{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:10px 14px;min-width:112px}
+  .kpi .n{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--ink-3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:11px 10px;border-bottom:1px solid #1e242f;vertical-align:top}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#171d28}
+  .fname{font-weight:550}
+  .muted{color:var(--ink-3);font-size:12.5px}
+
+  /* ---------- workspace ---------- */
+  .work{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(430px,.85fr);
+    flex:1;min-height:0}
+  .pane{min-width:0;display:flex;flex-direction:column;min-height:0}
+  .pane.left{border-right:1px solid var(--line);background:#0c0f15}
+  .pane-bar{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;flex:none;
+    background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .seg{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{background:transparent;border:0;padding:5px 12px;font-size:12.5px;color:var(--ink-2)}
+  .seg button.on{background:var(--accent-dim);color:#fff}
+  .doc{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;
+    align-items:center;gap:14px}
+  .doc canvas{max-width:100%;box-shadow:0 3px 16px #0008;border-radius:3px}
+  .pagewrap{position:relative}
+  .pagelabel{position:absolute;top:6px;left:6px;background:#000a;border-radius:4px;
+    padding:1px 7px;font-size:11px;color:#cfd6e4}
+  .ocrbadge{position:absolute;top:6px;right:6px;background:#7a4a12;border-radius:4px;
+    padding:1px 7px;font-size:11px;color:#ffd8a8}
+  .text-view{
+    flex:1;overflow:auto;padding:20px 26px;white-space:pre-wrap;
+    font:12.8px/1.72 var(--mono);color:#c9d2e0;max-width:none;
+  }
+  .text-view mark{background:#3b4d2a;color:#e9ffcf;border-radius:2px;padding:1px 0}
+  .text-view mark.on{background:var(--accent);color:#06101f;box-shadow:0 0 0 3px #5b9dff44}
+  .pagebreak{display:block;margin:18px 0;border-top:1px dashed #2a3140;
+    color:var(--ink-3);font-size:11px;padding-top:5px}
+
+  /* ---------- right pane ---------- */
+  .tabs{display:flex;gap:2px;padding:0 12px;background:var(--panel);
+    border-bottom:1px solid var(--line);flex:none}
+  .tabs button{
+    background:transparent;border:0;border-bottom:2px solid transparent;
+    padding:11px 13px;color:var(--ink-2);font-size:13px;
+  }
+  .tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+  .tabs .count{background:#28303d;border-radius:9px;padding:0 6px;font-size:11px;margin-left:6px}
+  .tabs .count.bad{background:#5a2020;color:#ffc9c9}
+  .tab-body{flex:1;overflow:auto;padding:14px}
+
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:2px 10px;font-size:12px;color:var(--ink-2)}
+  .chip b{color:var(--ink);font-weight:600}
+  .chip.warn{border-color:#7a4a12;color:#ffd8a8}
+
+  .grp{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:8px}
+  .grp:not(:first-child){margin-top:20px}
+
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-left-width:3px;
+    border-radius:8px;padding:11px 12px;margin-bottom:9px;transition:.12s;
+  }
+  .card:hover{border-color:#33405480}
+  .card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-dim)}
+  .card.rejected{opacity:.42}
+  .card-top{display:flex;align-items:baseline;gap:9px}
+  .code{font:600 14px var(--mono);letter-spacing:.3px}
+  .sys{font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);
+    border-radius:4px;padding:0 5px}
+  .desc{color:var(--ink-2);font-size:13px;margin:4px 0 0}
+  /* The capture line: date of service, page it was read from, and the code as
+     it travels on a claim (no decimal point). */
+  .capture{
+    margin-top:6px;padding:5px 8px;background:#11151d;border-radius:5px;
+    border-left:2px solid var(--accent-dim);
+    font:12.2px/1.5 var(--mono);color:#c3cddb;white-space:pre;overflow-x:auto;
+  }
+  .why{color:var(--ink-3);font-size:12px;margin-top:6px;font-style:italic}
+  .ev{
+    margin-top:8px;padding:7px 9px;background:#11151d;border-radius:6px;
+    border-left:2px solid #3a4658;font-size:12.2px;color:#b6c1d2;cursor:pointer;
+  }
+  .ev:hover{background:#141a24;border-left-color:var(--accent)}
+  .ev .q{color:#cfd8e6}
+  .ev .w{display:block;color:var(--ink-3);font-size:11.4px;margin-top:3px}
+  .row{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .conf{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .bar{width:48px;height:4px;background:#232b38;border-radius:3px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  input[type=text],input[type=number],select,textarea{
+    background:#10141c;border:1px solid var(--line);border-radius:6px;color:var(--ink);
+    padding:5px 8px;font:inherit;font-size:12.5px;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-dim)}
+  .mini{width:52px}
+  .sev-blocker{border-left-color:var(--blocker)}
+  .sev-high{border-left-color:var(--high)}
+  .sev-medium{border-left-color:var(--medium)}
+  .sev-low{border-left-color:var(--low)}
+  .sev-info{border-left-color:var(--info)}
+  .sev-tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .sev-tag.blocker{color:var(--blocker)} .sev-tag.high{color:var(--high)}
+  .sev-tag.medium{color:var(--medium)} .sev-tag.low{color:var(--low)}
+  .sev-tag.info{color:var(--info)}
+  .cite{font-size:11.4px;color:var(--ink-3);margin-top:7px;font-family:var(--mono)}
+  .action{margin-top:7px;font-size:12.5px;color:#cbd4e2;background:#131a24;
+    border-radius:6px;padding:7px 9px;border-left:2px solid var(--accent-dim)}
+  .done{opacity:.45}
+  .empty{color:var(--ink-3);text-align:center;padding:36px 10px;font-size:13px}
+  .searchbox{display:flex;gap:6px;margin-bottom:10px}
+  .searchbox input{flex:1}
+  .results{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+  .results div{padding:7px 10px;border-bottom:1px solid #1e242f;cursor:pointer;font-size:12.6px}
+  .results div:last-child{border-bottom:0}
+  .results div:hover{background:#1b2230}
+  pre.claim{background:#0b0e14;border:1px solid var(--line);border-radius:8px;
+    padding:12px;overflow:auto;font:12px/1.6 var(--mono);color:#b9c4d4}
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    background:#1e2635;border:1px solid var(--line);border-radius:8px;
+    padding:9px 16px;font-size:13px;box-shadow:0 6px 22px #0009;z-index:50;
+  }
+  .toast.err{border-color:#6b2b2b;background:#2a1719;color:#ffc9c9}
+  .modal-bg{position:fixed;inset:0;background:#000a;display:flex;align-items:center;
+    justify-content:center;z-index:60;padding:24px}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    max-width:760px;width:100%;max-height:86vh;display:flex;flex-direction:column}
+  .modal h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--line);font-size:15px}
+  .modal .body{padding:16px 18px;overflow:auto}
+  .modal .foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;
+    gap:8px;justify-content:flex-end}
+  .modal textarea{width:100%;min-height:340px;font:12.4px/1.6 var(--mono)}
+  .spin{width:15px;height:15px;border:2px solid #2c3646;border-top-color:var(--accent);
+    border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (max-width:1000px){.work{grid-template-columns:1fr}.pane.left{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot"></span>CodeAssist <small>coding &amp; audit workspace</small></div>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="navWorklist">Worklist</button>
+    <label class="btn" style="position:relative;overflow:hidden">
+      Upload chart
+      <input type="file" id="fileTop" accept="application/pdf" multiple
+             style="position:absolute;inset:0;opacity:0;cursor:pointer">
+    </label>
+  </header>
+
+  <!-- ================= WORKLIST ================= -->
+  <div class="view" id="viewList">
+    <div class="wrap">
+      <div class="drop" id="drop">
+        <h2>Drop a scanned chart here</h2>
+        <p>PDF in, evidence-linked codes and a pre-submission audit out.
+           Scanned pages are detected and OCR'd automatically.</p>
+        <label class="btn primary" style="position:relative;overflow:hidden">
+          Choose PDF files
+          <input type="file" id="fileMain" accept="application/pdf" multiple
+                 style="position:absolute;inset:0;opacity:0;cursor:pointer">
+        </label>
+        <div id="uploadStatus" class="muted" style="margin-top:12px"></div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+      <table>
+        <thead><tr>
+          <th>Document</th><th>Patient</th><th>Source</th>
+          <th>Codes</th><th>Findings</th><th>Status</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="listEmpty" style="display:none">
+        Nothing in the worklist yet. Upload a chart to begin.
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= WORKSPACE ================= -->
+  <div class="work" id="viewWork" style="display:none">
+    <div class="pane left">
+      <div class="pane-bar">
+        <div class="seg">
+          <button id="modeText" class="on">Text + evidence</button>
+          <button id="modePdf">Original PDF</button>
+        </div>
+        <div class="spacer"></div>
+        <span class="muted" id="docMeta"></span>
+      </div>
+      <div class="text-view" id="textView"></div>
+      <div class="doc" id="pdfView" style="display:none"></div>
+    </div>
+
+    <div class="pane">
+      <div class="tabs">
+        <button data-tab="codes" class="on">Codes <span class="count" id="cCodes">0</span></button>
+        <button data-tab="findings">Audit <span class="count" id="cFind">0</span></button>
+        <button data-tab="claim">Claim</button>
+      </div>
+      <div class="tab-body" id="tabCodes"></div>
+      <div class="tab-body" id="tabFindings" style="display:none"></div>
+      <div class="tab-body" id="tabClaim" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "/api";
+const $ = s => document.querySelector(s);
+let state = { enc:null, tab:"codes", selected:null, pdfDoc:null, mode:"text" };
+
+/* ---------------- utilities ---------------- */
+function toast(msg, isErr){
+  const t = document.createElement("div");
+  t.className = "toast" + (isErr ? " err" : "");
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), isErr ? 6000 : 2600);
+}
+function esc(s){ return (s??"").toString()
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+async function api(path, opts={}){
+  const r = await fetch(API + path, opts);
+  if(!r.ok){
+    let detail;
+    try { detail = (await r.json()).detail; } catch(e){ detail = r.statusText; }
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return r.headers.get("content-type")?.includes("json") ? r.json() : r.text();
+}
+
+/* ---------------- worklist ---------------- */
+async function loadList(){
+  const [{encounters}, stats] = await Promise.all([
+    api("/encounters?sort=risk"), api("/stats")
+  ]);
+  const sev = stats.open_findings_by_severity || {};
+  $("#kpis").innerHTML = `
+    <div class="kpi"><div class="n">${stats.encounters}</div><div class="l">Encounters</div></div>
+    <div class="kpi"><div class="n" style="color:var(--blocker)">${sev.blocker||0}</div><div class="l">Blockers</div></div>
+    <div class="kpi"><div class="n" style="color:var(--high)">${sev.high||0}</div><div class="l">High</div></div>
+    <div class="kpi"><div class="n">${stats.documents_needing_ocr}</div><div class="l">Needed OCR</div></div>`;
+
+  $("#rows").innerHTML = encounters.map(e => `
+    <tr data-id="${e.id}">
+      <td><div class="fname">${esc(e.filename)}</div>
+          <div class="muted">${e.page_count} page${e.page_count===1?"":"s"} · ${esc(e.date_of_service||"no DOS")}</div></td>
+      <td>${e.patient_age ?? "—"}${e.patient_sex ? " " + e.patient_sex : ""}
+          <div class="muted">${esc(e.patient_ref||"")}</div></td>
+      <td>${e.source_kind}${e.ocr_pages ? `<div class="muted">OCR ${e.ocr_pages}p · ${e.mean_ocr_confidence ?? "?"}%</div>`:""}</td>
+      <td>${e.counts.diagnoses} dx</td>
+      <td>${e.counts.blockers ? `<span class="sev-tag blocker">${e.counts.blockers} blocker</span> ` : ""}
+          ${e.counts.high ? `<span class="sev-tag high">${e.counts.high} high</span> ` : ""}
+          <span class="muted">${e.counts.findings_open} open</span></td>
+      <td>${esc(e.status)}</td>
+    </tr>`).join("");
+  $("#listEmpty").style.display = encounters.length ? "none" : "block";
+  document.querySelectorAll("#rows tr").forEach(tr =>
+    tr.onclick = () => open(tr.dataset.id));
+}
+
+/* ---------------- upload ---------------- */
+async function upload(files){
+  const status = $("#uploadStatus");
+  for(const f of files){
+    status.innerHTML = `<span class="spin"></span> Reading <b>${esc(f.name)}</b> — extracting text, OCR'ing scanned pages, suggesting codes, running the audit…`;
+    const fd = new FormData();
+    fd.append("file", f);
+    try{
+      const enc = await api("/documents", { method:"POST", body:fd });
+      status.innerHTML = `Processed <b>${esc(f.name)}</b>.`;
+      await loadList();
+      if(files.length === 1) open(enc.id);
+    }catch(err){
+      status.textContent = "";
+      toast(err.message, true);
+    }
+  }
+}
+["fileMain","fileTop"].forEach(id => $("#"+id).onchange = e => {
+  if(e.target.files.length){ show("list"); upload([...e.target.files]); e.target.value = ""; }
+});
+const drop = $("#drop");
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.add("hot"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.remove("hot"); }));
+drop.addEventListener("drop", e => upload([...e.dataTransfer.files]
+  .filter(f => f.type === "application/pdf")));
+
+/* ---------------- navigation ---------------- */
+function show(which){
+  $("#viewList").style.display = which === "list" ? "block" : "none";
+  $("#viewWork").style.display = which === "work" ? "grid" : "none";
+}
+$("#navWorklist").onclick = () => { show("list"); loadList(); };
+
+async function open(id){
+  state.enc = await api("/encounters/" + id);
+  state.selected = null;
+  show("work");
+  renderDoc();
+  render();
+}
+
+/* ---------------- document pane ---------------- */
+function renderDoc(){
+  const e = state.enc;
+  $("#docMeta").textContent =
+    `${e.filename} · ${e.page_count}p · ${e.source_kind}` +
+    (e.ocr_pages ? ` · OCR ${e.ocr_pages}p @ ${e.mean_ocr_confidence}%` : "");
+  loadText();
+}
+async function loadText(){
+  const d = await api(`/documents/${state.enc.document_id}/text`);
+  state.text = d.text; state.pages = d.pages;
+  paintText([]);
+}
+/* Render the extracted text with page separators, then overlay highlights for
+   the selected item's evidence spans. Working from the text layer (rather than
+   PDF coordinates) means highlighting behaves identically for born-digital and
+   OCR'd pages. */
+function paintText(spans){
+  const text = state.text || "";
+  const marks = [...spans].sort((a,b)=>a.s-b.s);
+  let html = "", cursor = 0;
+  for(const m of marks){
+    if(m.s < cursor) continue;
+    html += esc(text.slice(cursor, m.s));
+    html += `<mark class="${m.on ? "on":""}" id="${m.id||""}">${esc(text.slice(m.s, m.e))}</mark>`;
+    cursor = m.e;
+  }
+  html += esc(text.slice(cursor));
+
+  // Page separators: rather than splicing markers into the already-escaped
+  // string, render page by page and escape each chunk independently.
+  const pages = state.pages || [];
+  if(pages.length > 1){
+    let out = "";
+    for(const p of pages){
+      const chunk = text.slice(p.char_start, p.char_end);
+      out += `<span class="pagebreak">— page ${p.page}${p.ocr ? ` · OCR ${p.confidence ?? "?"}%`:""} —</span>`;
+      out += renderChunk(chunk, p.char_start, marks);
+    }
+    $("#textView").innerHTML = out;
+  } else {
+    $("#textView").innerHTML = html;
+  }
+  const first = document.querySelector("#textView mark.on") || document.querySelector("#textView mark");
+  if(first) first.scrollIntoView({block:"center", behavior:"smooth"});
+}
+function renderChunk(chunk, offset, marks){
+  let out = "", cursor = 0;
+  for(const m of marks){
+    const s = m.s - offset, e = m.e - offset;
+    if(e <= 0 || s >= chunk.length || s < cursor) continue;
+    out += esc(chunk.slice(cursor, Math.max(0,s)));
+    out += `<mark class="${m.on ? "on":""}">${esc(chunk.slice(Math.max(0,s), Math.min(chunk.length,e)))}</mark>`;
+    cursor = Math.min(chunk.length, e);
+  }
+  return out + esc(chunk.slice(cursor));
+}
+function highlight(evidence){
+  paintText((evidence||[]).map(ev => ({s:ev.char_start, e:ev.char_end, on:true})));
+}
+
+$("#modeText").onclick = () => setMode("text");
+$("#modePdf").onclick  = () => setMode("pdf");
+function setMode(m){
+  state.mode = m;
+  $("#modeText").classList.toggle("on", m==="text");
+  $("#modePdf").classList.toggle("on", m==="pdf");
+  $("#textView").style.display = m==="text" ? "block":"none";
+  $("#pdfView").style.display  = m==="pdf" ? "flex":"none";
+  if(m==="pdf" && !state.pdfDoc) renderPdf();
+}
+const PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(true);
+  // Development fallback only.
+  return new Promise(res => {
+    const s = document.createElement("script");
+    s.src = PDFJS_CDN + "pdf.min.js";
+    s.onload = () => res(true);
+    s.onerror = () => res(false);
+    document.head.appendChild(s);
+  });
+}
+async function renderPdf(){
+  const container = $("#pdfView");
+  container.innerHTML = '<div class="empty"><span class="spin"></span> rendering…</div>';
+  if(!await loadPdfJs()){
+    container.innerHTML = `<div class="empty">
+      The PDF renderer is not available offline.<br>
+      Run <code>make vendor</code> to place pdf.js in <code>frontend/vendor/</code>,
+      or use the <b>Text + evidence</b> view, which needs no external library and
+      works identically for scanned pages.<br><br>
+      <a href="${API}/documents/${state.enc.document_id}/file" target="_blank">Open the original PDF in a new tab</a>
+    </div>`;
+    return;
+  }
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      (window.__pdfjsLocalMissing ? PDFJS_CDN : "/static/vendor/") + "pdf.worker.min.js";
+    const pdf = await pdfjsLib.getDocument(
+      `${API}/documents/${state.enc.document_id}/file`).promise;
+    state.pdfDoc = pdf;
+    container.innerHTML = "";
+    const meta = Object.fromEntries((state.pages||[]).map(p=>[p.page,p]));
+    for(let n=1; n<=pdf.numPages; n++){
+      const page = await pdf.getPage(n);
+      const vp = page.getViewport({scale:1.35});
+      const wrap = document.createElement("div"); wrap.className="pagewrap";
+      const canvas = document.createElement("canvas");
+      canvas.width = vp.width; canvas.height = vp.height;
+      wrap.appendChild(canvas);
+      const lbl = document.createElement("span");
+      lbl.className="pagelabel"; lbl.textContent = `p. ${n}`;
+      wrap.appendChild(lbl);
+      if(meta[n]?.ocr){
+        const b = document.createElement("span");
+        b.className="ocrbadge";
+        b.textContent = `OCR ${meta[n].confidence ?? "?"}%`;
+        wrap.appendChild(b);
+      }
+      container.appendChild(wrap);
+      await page.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
+    }
+  }catch(err){ container.innerHTML = `<div class="empty">Could not render PDF: ${esc(err.message)}</div>`; }
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  state.tab = b.dataset.tab;
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x===b));
+  render();
+});
+
+function render(){
+  const e = state.enc;
+  const openF = e.findings.filter(f => f.status === "open");
+  $("#cCodes").textContent = e.codes.filter(c => c.status !== "rejected").length;
+  const cf = $("#cFind");
+  cf.textContent = openF.length;
+  cf.className = "count" + (openF.some(f => f.severity === "blocker") ? " bad" : "");
+
+  $("#tabCodes").style.display    = state.tab==="codes" ? "block":"none";
+  $("#tabFindings").style.display = state.tab==="findings" ? "block":"none";
+  $("#tabClaim").style.display    = state.tab==="claim" ? "block":"none";
+
+  if(state.tab==="codes") renderCodes();
+  if(state.tab==="findings") renderFindings();
+  if(state.tab==="claim") renderClaim();
+}
+
+function metaBar(){
+  const e = state.enc;
+  return `<div class="meta">
+    <span class="chip">Patient <b>${e.patient_age ?? "?"}${e.patient_sex ? " "+e.patient_sex : ""}</b></span>
+    <span class="chip">DOS <b>${esc(e.date_of_service || "—")}</b></span>
+    <span class="chip">Payer <b>${esc(e.payer || "—")}</b></span>
+    ${e.ocr_pages ? `<span class="chip warn">${e.ocr_pages} page(s) via OCR</span>`:""}
+  </div>`;
+}
+
+/* ---------------- codes tab ---------------- */
+function renderCodes(){
+  const e = state.enc;
+  const dx = e.codes.filter(c => c.system === "ICD10CM");
+  // Procedure coding is out of scope, but a legacy CPT/HCPCS line already on an
+  // encounter must stay visible and reviewable rather than silently disappear.
+  const legacy = e.codes.filter(c => c.system !== "ICD10CM");
+  $("#tabCodes").innerHTML = metaBar() + `
+    <div class="searchbox">
+      <input type="text" id="codeSearch" placeholder="Search ICD-10-CM to add a diagnosis (e.g. 'copd', 'E11')">
+      <button class="btn sm" id="recode">Re-run</button>
+    </div>
+    <div id="searchResults"></div>
+    <div class="grp">Diagnoses <span class="muted">${dx.length}</span></div>
+    <div id="dxList">${dx.map(codeCard).join("") || '<div class="empty">No diagnoses suggested.</div>'}</div>
+    ${legacy.length ? `<div class="grp">Non-diagnosis lines <span class="muted">${legacy.length}</span></div>
+    <div id="pxList">${legacy.map(codeCard).join("")}</div>` : ""}`;
+  wireCodes();
+}
+
+function codeCard(c){
+  const conf = c.confidence != null ? Math.round(c.confidence*100) : null;
+  return `<div class="card ${c.status==="rejected"?"rejected":""} ${state.selected===c.id?"sel":""}" data-code="${c.id}">
+    <div class="card-top">
+      <span class="code">${esc(c.code)}</span>
+      <span class="sys">${esc(c.system)}</span>
+      ${c.rank ? `<span class="muted">dx ${c.rank}</span>`:""}
+      <div class="spacer" style="flex:1"></div>
+      ${conf!=null ? `<span class="conf">${conf}%</span><span class="bar"><i style="width:${conf}%"></i></span>`
+                   : `<span class="conf">manual</span>`}
+    </div>
+    <div class="desc">${esc(c.description || "")}</div>
+    ${c.capture ? `<div class="capture">${esc(c.capture)}</div>`:""}
+    ${c.reasoning ? `<div class="why">${esc(c.reasoning)}</div>`:""}
+    ${(c.evidence||[]).slice(0,2).map(ev => `
+      <div class="ev" data-ev='${esc(JSON.stringify([ev]))}'>
+        <span class="q">“${esc((ev.quote||"").slice(0,240))}”</span>
+        <span class="w">${esc(ev.why || "")}${ev.page ? ` · page ${ev.page}`:""}</span>
+      </div>`).join("")}
+    <div class="row">
+      <button class="btn sm" data-act="accept" ${c.status==="accepted"?"disabled":""}>
+        ${c.status==="accepted" ? "✓ accepted" : "Accept"}</button>
+      <button class="btn sm" data-act="reject" ${c.status==="rejected"?"disabled":""}>
+        ${c.status==="rejected" ? "rejected" : "Reject"}</button>
+      <label class="muted">units <input class="mini" type="number" min="1" value="${c.units||1}" data-act="units"></label>
+      <label class="muted">mods <input class="mini" style="width:74px" type="text"
+        value="${esc((c.modifiers||[]).join(","))}" placeholder="25,59" data-act="mods"></label>
+      <button class="btn sm ghost" data-act="delete" title="Remove line">✕</button>
+    </div>
+  </div>`;
+}
+
+function wireCodes(){
+  document.querySelectorAll("#tabCodes .card").forEach(card => {
+    const id = card.dataset.code;
+    card.onclick = ev => {
+      if(ev.target.closest("[data-act]") || ev.target.closest(".ev")) return;
+      state.selected = id;
+      const c = state.enc.codes.find(x => x.id === id);
+      highlight(c.evidence);
+      render();
+    };
+    card.querySelectorAll(".ev").forEach(el => el.onclick = () => {
+      highlight(JSON.parse(el.dataset.ev)); setMode("text");
+    });
+    card.querySelectorAll("[data-act]").forEach(el => {
+      const act = el.dataset.act;
+      if(act==="units" || act==="mods"){
+        el.onchange = () => patchCode(id, act==="units"
+          ? {units: parseInt(el.value||"1",10)}
+          : {modifiers: el.value.split(",").map(s=>s.trim()).filter(Boolean)});
+      } else if(act==="delete"){
+        el.onclick = async () => {
+          state.enc = await api("/codes/"+id, {method:"DELETE"});
+          render(); toast("Line removed");
+        };
+      } else {
+        el.onclick = () => patchCode(id, {status: act==="accept" ? "accepted":"rejected"});
+      }
+    });
+  });
+  $("#recode").onclick = async () => {
+    $("#recode").innerHTML = '<span class="spin"></span>';
+    state.enc = await api(`/encounters/${state.enc.id}/recode`, {method:"POST"});
+    render(); toast("Re-coded and re-audited");
+  };
+  const box = $("#codeSearch");
+  let timer;
+  box.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const q = box.value.trim();
+      if(q.length < 2){ $("#searchResults").innerHTML=""; return; }
+      const {results} = await api("/codes/search?q=" + encodeURIComponent(q));
+      $("#searchResults").innerHTML = results.length ? `<div class="results">` + results.map(r =>
+        `<div data-sys="${r.system}" data-code="${r.code}">
+           <b style="font-family:var(--mono)">${esc(r.code)}</b>
+           <span class="muted"> ${esc(r.system)}</span> — ${esc(r.description)}</div>`).join("") + `</div>`
+        : `<div class="muted" style="margin-bottom:12px">No match in the loaded terminology.</div>`;
+      document.querySelectorAll("#searchResults div[data-code]").forEach(el =>
+        el.onclick = async () => {
+          state.enc = await api(`/encounters/${state.enc.id}/codes`, {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({system: el.dataset.sys, code: el.dataset.code})});
+          box.value=""; $("#searchResults").innerHTML="";
+          render(); toast(`Added ${el.dataset.code}`);
+        });
+    }, 220);
+  };
+}
+
+async function patchCode(id, body){
+  try{
+    state.enc = await api("/codes/"+id, {
+      method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)});
+    render();
+  }catch(err){ toast(err.message, true); }
+}
+
+/* ---------------- findings tab ---------------- */
+const SEV_ORDER = ["blocker","high","medium","low","info"];
+const SEV_LABEL = {
+  blocker:"— do not submit", high:"— review required", medium:"— should correct",
+  low:"— quality", info:"— opportunity"
+};
+function renderFindings(){
+  const e = state.enc;
+  const openF = e.findings.filter(f => f.status === "open");
+  const closed = e.findings.filter(f => f.status !== "open");
+  let html = metaBar();
+  if(!openF.length) html += `<div class="empty">No open findings. This claim passes every enabled rule.</div>`;
+  for(const sev of SEV_ORDER){
+    const group = openF.filter(f => f.severity === sev);
+    if(!group.length) continue;
+    html += `<div class="grp"><span class="sev-tag ${sev}">${sev}</span> ${SEV_LABEL[sev]} <span class="muted">${group.length}</span></div>`;
+    // Note: not `group.map(findingCard)` - map passes the index as the second
+    // argument, which would land in `isClosed` and grey out every card after
+    // the first.
+    html += group.map(f => findingCard(f, false)).join("");
+  }
+  if(closed.length){
+    html += `<div class="grp">Resolved / dismissed <span class="muted">${closed.length}</span></div>`;
+    html += closed.map(f => findingCard(f, true)).join("");
+  }
+  $("#tabFindings").innerHTML = html;
+  wireFindings();
+}
+function findingCard(f, isClosed){
+  return `<div class="card sev-${f.severity} ${isClosed?"done":""}" data-find="${f.id}">
+    <div class="card-top">
+      <span class="sev-tag ${f.severity}">${f.severity}</span>
+      <span style="font-weight:600">${esc(f.title)}</span>
+    </div>
+    <div class="desc">${esc(f.detail)}</div>
+    ${f.suggested_action ? `<div class="action"><b>Do:</b> ${esc(f.suggested_action)}</div>`:""}
+    ${(f.evidence||[]).slice(0,2).map(ev => `
+      <div class="ev" data-ev='${esc(JSON.stringify([ev]))}'>
+        <span class="q">“${esc((ev.quote||"").slice(0,240))}”</span>
+        <span class="w">${esc(ev.why||"")}${ev.page ? ` · page ${ev.page}`:""}</span>
+      </div>`).join("")}
+    ${f.citation ? `<div class="cite">${esc(f.citation)}</div>`:""}
+    ${f.dismiss_reason ? `<div class="cite">dismissed: ${esc(f.dismiss_reason)}</div>`:""}
+    ${isClosed ? "" : `<div class="row">
+      <button class="btn sm" data-fact="resolve">Mark resolved</button>
+      <button class="btn sm ghost" data-fact="dismiss">Dismiss…</button>
+      ${f.rule_id==="documentation_gap_query" ? `<button class="btn sm" data-fact="query">Draft provider query</button>`:""}
+    </div>`}
+  </div>`;
+}
+function wireFindings(){
+  document.querySelectorAll("#tabFindings .card").forEach(card => {
+    const id = card.dataset.find;
+    card.querySelectorAll(".ev").forEach(el => el.onclick = () => {
+      highlight(JSON.parse(el.dataset.ev)); setMode("text");
+    });
+    card.querySelectorAll("[data-fact]").forEach(el => el.onclick = async () => {
+      const act = el.dataset.fact;
+      if(act === "query"){
+        const q = await api(`/findings/${id}/query`, {method:"POST"});
+        showModal(q.subject, q.body);
+        return;
+      }
+      let body = {status: "accepted"};
+      if(act === "dismiss"){
+        const reason = prompt("Why is this finding not applicable?\n(Recorded in the audit trail.)");
+        if(!reason) return;
+        body = {status:"dismissed", dismiss_reason: reason};
+      }
+      state.enc = await api("/findings/"+id, {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(body)});
+      render();
+    });
+  });
+}
+
+/* ---------------- claim tab ---------------- */
+async function renderClaim(){
+  const e = state.enc;
+  const blockers = e.findings.filter(f => f.severity==="blocker" && f.status==="open");
+  let html = metaBar();
+  if(blockers.length){
+    html += `<div class="card sev-blocker">
+      <div class="card-top"><span class="sev-tag blocker">hold</span>
+      <span style="font-weight:600">${blockers.length} blocking finding(s) must be resolved before export</span></div>
+      <div class="desc">${blockers.map(b=>esc(b.title)).join("<br>")}</div></div>`;
+    $("#tabClaim").innerHTML = html;
+    return;
+  }
+  try{
+    const claim = await api(`/encounters/${e.id}/export?fmt=json`);
+    html += `<div class="row" style="margin:0 0 12px">
+      <a class="btn sm" href="${API}/encounters/${e.id}/export?fmt=csv">Download CSV</a>
+      <button class="btn sm" id="markReady">Mark ready to submit</button></div>`;
+    html += `<pre class="claim">${esc(JSON.stringify(claim, null, 2))}</pre>`;
+    $("#tabClaim").innerHTML = html;
+    $("#markReady").onclick = async () => {
+      state.enc = await api(`/encounters/${e.id}`, {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({status:"ready"})});
+      toast("Marked ready"); render();
+    };
+  }catch(err){
+    $("#tabClaim").innerHTML = html + `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+/* ---------------- modal ---------------- */
+function showModal(title, body){
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal">
+    <h3>${esc(title)}</h3>
+    <div class="body"><textarea id="qbody">${esc(body)}</textarea></div>
+    <div class="foot">
+      <button class="btn" id="qcopy">Copy</button>
+      <button class="btn primary" id="qclose">Close</button>
+    </div></div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e => { if(e.target === bg) bg.remove(); };
+  bg.querySelector("#qclose").onclick = () => bg.remove();
+  bg.querySelector("#qcopy").onclick = () => {
+    navigator.clipboard.writeText(bg.querySelector("#qbody").value);
+    toast("Query copied");
+  };
+}
+
+loadList();
+</script>
+</body>
+</html>

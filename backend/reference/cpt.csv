@@ -1,0 +1,59 @@
+code,description,keywords,global_days,mue,sex,age_min,age_max,category,bilateral_eligible,professional_component,em_level,em_type
+99202,"Office o/p new pt straightforward 15-29 min",new patient straightforward,0,1,,0,120,em,0,0,1,new
+99203,"Office o/p new pt low MDM 30-44 min",new patient low complexity,0,1,,0,120,em,0,0,2,new
+99204,"Office o/p new pt moderate MDM 45-59 min",new patient moderate complexity,0,1,,0,120,em,0,0,3,new
+99205,"Office o/p new pt high MDM 60-74 min",new patient high complexity,0,1,,0,120,em,0,0,4,new
+99211,"Office o/p est pt may not require physician",established minimal,0,1,,0,120,em,0,0,0,established
+99212,"Office o/p est pt straightforward 10-19 min",established straightforward,0,1,,0,120,em,0,0,1,established
+99213,"Office o/p est pt low MDM 20-29 min",established low complexity,0,1,,0,120,em,0,0,2,established
+99214,"Office o/p est pt moderate MDM 30-39 min",established moderate complexity,0,1,,0,120,em,0,0,3,established
+99215,"Office o/p est pt high MDM 40-54 min",established high complexity,0,1,,0,120,em,0,0,4,established
+99221,Initial hospital inpatient care straightforward/low,initial hospital care low,0,1,,0,120,em,0,0,2,inpatient
+99222,Initial hospital inpatient care moderate,initial hospital care moderate,0,1,,0,120,em,0,0,3,inpatient
+99223,Initial hospital inpatient care high,initial hospital care high,0,1,,0,120,em,0,0,4,inpatient
+99231,Subsequent hospital care straightforward/low,subsequent hospital care low,0,1,,0,120,em,0,0,2,inpatient
+99232,Subsequent hospital care moderate,subsequent hospital care moderate,0,1,,0,120,em,0,0,3,inpatient
+99233,Subsequent hospital care high,subsequent hospital care high,0,1,,0,120,em,0,0,4,inpatient
+99395,Periodic preventive medicine est pt 18-39 yrs,preventive medicine established 18-39,0,1,,18,39,preventive,0,0,,
+99396,Periodic preventive medicine est pt 40-64 yrs,preventive medicine established 40-64,0,1,,40,64,preventive,0,0,,
+99397,Periodic preventive medicine est pt 65+ yrs,preventive medicine established 65 and over,0,1,,65,120,preventive,0,0,,
+99406,Smoking cessation counseling 3-10 minutes,smoking cessation counseling brief,0,1,,10,120,counseling,0,0,,
+99497,Advance care planning first 30 minutes,advance care planning,0,1,,18,120,counseling,0,0,,
+96127,Brief emotional/behavioral assessment,phq-9|gad-7|brief emotional assessment,0,4,,0,120,assessment,0,0,,
+36415,Collection of venous blood by venipuncture,venipuncture|blood draw,0,1,,0,120,lab,0,0,,
+80048,Basic metabolic panel,basic metabolic panel|bmp,0,1,,0,120,lab,0,0,,
+80053,Comprehensive metabolic panel,comprehensive metabolic panel|cmp,0,1,,0,120,lab,0,0,,
+80061,Lipid panel,lipid panel|cholesterol panel,0,1,,0,120,lab,0,0,,
+83036,Hemoglobin A1c,hemoglobin a1c|hba1c|a1c,0,1,,0,120,lab,0,0,,
+84443,Thyroid stimulating hormone,tsh|thyroid stimulating hormone,0,1,,0,120,lab,0,0,,
+85025,Complete CBC automated with automated differential,cbc with differential|complete blood count with diff,0,1,,0,120,lab,0,0,,
+81002,Urinalysis non-automated without microscopy,urinalysis dipstick|ua dipstick,0,1,,0,120,lab,0,0,,
+81003,Urinalysis automated without microscopy,urinalysis automated,0,1,,0,120,lab,0,0,,
+87880,"Strep group A assay, direct optical observation",rapid strep test|strep a rapid antigen,0,1,,0,120,lab,0,0,,
+93000,Electrocardiogram routine 12-lead with interpretation and report,ekg with interpretation|ecg 12 lead with interpretation,0,1,,0,120,diagnostic,0,1,,
+93005,Electrocardiogram routine 12-lead tracing only,ekg tracing only,0,1,,0,120,diagnostic,0,0,,
+93010,Electrocardiogram routine 12-lead interpretation and report only,ekg interpretation only,0,1,,0,120,diagnostic,0,0,,
+71045,Radiologic examination chest single view,chest x-ray single view|cxr one view,0,1,,0,120,imaging,0,1,,
+71046,Radiologic examination chest 2 views,chest x-ray 2 views|cxr two views|chest xray pa and lateral,0,1,,0,120,imaging,0,1,,
+73562,Radiologic examination knee 3 views,knee x-ray 3 views,0,2,,0,120,imaging,1,1,,
+94010,Spirometry,spirometry,0,1,,0,120,diagnostic,0,1,,
+94060,Bronchodilator responsiveness spirometry pre and post,spirometry pre and post bronchodilator,0,1,,0,120,diagnostic,0,1,,
+94640,Pressurized or nonpressurized inhalation treatment,nebulizer treatment|albuterol nebulizer|duoneb treatment,0,4,,0,120,therapy,0,0,,
+20610,Arthrocentesis aspiration and/or injection major joint without ultrasound guidance,knee injection|joint aspiration major joint|arthrocentesis knee,0,2,,0,120,procedure,1,0,,
+20611,Arthrocentesis aspiration and/or injection major joint with ultrasound guidance,knee injection with ultrasound guidance|ultrasound guided joint injection,0,2,,0,120,procedure,1,0,,
+76942,Ultrasonic guidance for needle placement imaging supervision,ultrasound guidance needle placement,0,1,,0,120,imaging,0,1,,
+96372,Therapeutic prophylactic or diagnostic injection subcutaneous or intramuscular,im injection|intramuscular injection therapeutic,0,3,,0,120,procedure,0,0,,
+90471,Immunization administration one vaccine,immunization administration|vaccine administration first,0,1,,0,120,immunization,0,0,,
+90686,Influenza virus vaccine quadrivalent split preservative free 0.5 mL,flu vaccine quadrivalent|influenza vaccine,0,1,,3,120,immunization,0,0,,
+10060,Incision and drainage of abscess simple or single,i and d abscess simple|incision and drainage simple abscess,10,2,,0,120,procedure,0,0,,
+10061,Incision and drainage of abscess complicated or multiple,i and d abscess complicated,10,1,,0,120,procedure,0,0,,
+11042,Debridement subcutaneous tissue first 20 sq cm or less,debridement subcutaneous tissue,0,1,,0,120,procedure,0,0,,
+12001,Simple repair superficial wounds scalp neck axillae trunk 2.5 cm or less,simple laceration repair 2.5 cm,0,1,,0,120,procedure,0,0,,
+17000,Destruction premalignant lesion first lesion,destruction premalignant lesion|cryotherapy actinic keratosis first,10,1,,0,120,procedure,0,0,,
+69210,Removal impacted cerumen requiring instrumentation unilateral,cerumen removal with instrumentation|impacted cerumen removal,0,1,,0,120,procedure,1,0,,
+29870,Arthroscopy knee diagnostic,diagnostic knee arthroscopy,90,1,,0,120,surgery,1,0,,
+29874,Arthroscopy knee surgical for removal of loose or foreign body,arthroscopic removal loose body knee,90,1,,0,120,surgery,1,0,,
+29881,Arthroscopy knee surgical with meniscectomy medial or lateral,arthroscopic partial medial meniscectomy|knee arthroscopy meniscectomy,90,1,,0,120,surgery,1,0,,
+45378,Colonoscopy flexible diagnostic,diagnostic colonoscopy,0,1,,0,120,endoscopy,0,0,,
+45380,Colonoscopy flexible with biopsy single or multiple,colonoscopy with biopsy,0,1,,0,120,endoscopy,0,0,,
+45385,Colonoscopy flexible with removal of lesion by snare technique,colonoscopy with snare polypectomy,0,1,,0,120,endoscopy,0,0,,

@@ -1,0 +1,16 @@
+# PHI must never reach version control.
+storage/
+*.db
+uploads/
+charts/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+
+frontend/vendor/
+samples/_*.pdf
+.DS_Store

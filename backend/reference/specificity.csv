@@ -1,0 +1,17 @@
+from_code,to_code,trigger_keywords,prompt,severity
+I50.9,I50.22,systolic|reduced ejection fraction|hfref|ef 35|ef 30|ef of 35,Documentation describes systolic dysfunction - code the chronic systolic type rather than unspecified heart failure,high
+I50.9,I50.32,diastolic|preserved ejection fraction|hfpef,Documentation describes diastolic dysfunction - code the chronic diastolic type rather than unspecified heart failure,high
+J44.9,J44.1,exacerbation|flare|acute worsening|increased sputum,Documentation describes an acute exacerbation - J44.1 pays as a higher-severity code and is better supported,high
+J45.909,J45.41,moderate persistent|exacerbation,Asthma severity and exacerbation status are documented - use the specific severity code,medium
+N18.30,N18.31,stage 3a|egfr 45|egfr of 45|egfr 50|egfr 48,eGFR documented in the stage 3a range - code N18.31,medium
+N18.30,N18.32,stage 3b|egfr 35|egfr of 35|egfr 38|egfr 32,eGFR documented in the stage 3b range - code N18.32,medium
+E11.40,E11.42,polyneuropathy|stocking-glove|bilateral lower extremity numbness|distal symmetric,Polyneuropathy is documented - E11.42 is the specific code,medium
+J02.9,J02.0,rapid strep positive|strep positive|group a strep positive|positive for strep,A positive strep result is documented - code the streptococcal pharyngitis,high
+M17.10,M17.11,right knee,Laterality is documented - use the right-knee code,high
+M17.10,M17.12,left knee,Laterality is documented - use the left-knee code,high
+E66.9,E66.01,morbid obesity|bmi 40|bmi 41|bmi 42|bmi 43|bmi 44|bmi of 41,BMI in the morbid obesity range is documented - E66.01 plus a Z68 BMI code,high
+E78.5,E78.00,hypercholesterolemia|elevated ldl only,Documentation specifies hypercholesterolemia rather than mixed hyperlipidemia,low
+A41.9,A41.9,blood culture|organism|klebsiella|e coli|staph aureus|pseudomonas,An organism is named in the documentation - code the organism-specific sepsis code,high
+D64.9,D50.9,iron deficiency|ferritin low|low ferritin|iron studies consistent,Iron deficiency is documented - code the specific anemia type,medium
+R07.9,R07.89,musculoskeletal|atypical|reproducible chest wall,Chest pain is characterised in the note - avoid the unspecified code,low
+F32.9,F33.1,recurrent|second episode|prior episode of depression,Recurrence is documented - the recurrent-episode code is required,medium
