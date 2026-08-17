@@ -21,17 +21,45 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    event,
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 from .config import DATABASE_URL
 
 Base = declarative_base()
+
+_IS_SQLITE = DATABASE_URL.startswith("sqlite")
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    # timeout= is how long SQLite waits on a locked database before giving up.
+    # The default is 5s, which an upload cannot survive: ingestion holds a write
+    # transaction open across the whole OCR run, so any concurrent write - the
+    # next upload, an audit re-run - would fail with "database is locked".
+    connect_args={"check_same_thread": False, "timeout": 30} if _IS_SQLITE else {},
     future=True,
 )
+
+
+@event.listens_for(engine, "connect")
+def _sqlite_pragmas(dbapi_connection, _record) -> None:
+    """WAL so a long write does not block readers.
+
+    In SQLite's default rollback-journal mode a writer excludes readers for the
+    duration of its transaction. Ingestion keeps one open for as long as OCR
+    takes, which would stall every worklist poll behind it. WAL lets readers
+    carry on against the last committed snapshot while the writer works.
+    """
+    if not _IS_SQLITE:
+        return
+    cur = dbapi_connection.cursor()
+    cur.execute("PRAGMA journal_mode=WAL")
+    cur.execute("PRAGMA synchronous=NORMAL")
+    cur.execute("PRAGMA busy_timeout=30000")
+    cur.close()
+
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
 
