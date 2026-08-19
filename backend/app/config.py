@@ -21,6 +21,14 @@ STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 DATABASE_URL = os.getenv("CA_DATABASE_URL", f"sqlite:///{PROJECT_DIR / 'codeassist.db'}")
 
+ALLOWED_ORIGINS = [
+       o.strip()
+       for o in os.getenv(
+           "CA_ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000"
+       ).split(",")
+       if o.strip()
+   ]
+
 # --- Code systems -----------------------------------------------------------
 # This deployment codes diagnoses only. Every code that reaches a claim line -
 # suggested, LLM-extracted, or typed by a coder - must come from the ICD-10-CM
