@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .api.routes import router
 from .audit import rules as _rules  # noqa: F401  (registers the rule functions)
-from .config import FRONTEND_DIR
+from .config import ALLOWED_ORIGINS, FRONTEND_DIR
 from .db import init_db
 
 logging.basicConfig(
@@ -31,7 +31,7 @@ app = FastAPI(
 # is not acceptable outside local development.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
