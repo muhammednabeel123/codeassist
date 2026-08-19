@@ -9,6 +9,11 @@
      development. A page displaying PHI should not be reaching a third-party
      CDN in production - vendor it. -->
 <script>window.PDFJS_LOCAL = "/static/vendor/pdf.min.js";</script>
+<!-- Only needed when this frontend is deployed separately from the backend
+     (e.g. this file on Vercel, the API on Render). Set to the backend's
+     full URL, e.g. "https://codeassist-api.onrender.com/api". Leave null
+     when both are served from the same origin. -->
+<script>window.CODEASSIST_API_BASE = null;</script>
 <script src="/static/vendor/pdf.min.js"
         onerror="window.__pdfjsLocalMissing=true"></script>
 <style>
@@ -280,7 +285,12 @@
 </div>
 
 <script>
-const API = "/api";
+// When this file is served from the same origin as the API (the default,
+// single-container deployment) leave this as-is. When the frontend is
+// hosted separately (e.g. a static deploy on Vercel while the API runs on
+// Render), set window.CODEASSIST_API_BASE to the API's full URL before this
+// script runs, e.g. "https://codeassist-api.onrender.com/api".
+const API = window.CODEASSIST_API_BASE || "/api";
 const $ = s => document.querySelector(s);
 let state = { enc:null, tab:"codes", selected:null, pdfDoc:null, mode:"text" };
 
