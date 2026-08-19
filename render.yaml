@@ -9,9 +9,17 @@ services:
       - key: CA_STORAGE_DIR
         value: /data/storage
       - key: CA_DATABASE_URL
-        value: sqlite:////data/codeassist.db
+        sync: false
+        # Set this in the Render dashboard, not here - it carries a DB
+        # password. Point it at your Vercel Postgres connection string,
+        # e.g. postgres://user:pass@host/db?sslmode=require
+      - key: CA_ALLOWED_ORIGINS
+        sync: false
+        # Set this in the Render dashboard to your Vercel frontend URL(s),
+        # comma-separated, e.g. https://codeassist.vercel.app
       - key: CA_LLM_ENABLED
         value: "0"
     # Render's free plan has no persistent disk, so /data resets on every
-    # redeploy (not on sleep/wake). Fine for a demo; add a paid disk for
-    # data that must survive redeploys.
+    # redeploy (not on sleep/wake). Once CA_DATABASE_URL points at Postgres
+    # that only affects CA_STORAGE_DIR (uploaded PDFs on disk), not app data -
+    # consider object storage for those if they must survive redeploys too.

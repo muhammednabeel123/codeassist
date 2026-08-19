@@ -4,6 +4,10 @@ python-multipart>=0.0.9
 sqlalchemy>=2.0
 pyyaml>=6.0
 
+# Postgres driver - only needed when CA_DATABASE_URL points at postgres://
+# instead of the default sqlite:/// (e.g. Vercel Postgres in production).
+psycopg2-binary>=2.9
+
 # PDF text layer + OCR fallback
 pdfplumber>=0.11
 pdf2image>=1.17
